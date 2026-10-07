@@ -353,7 +353,7 @@ def stream_answer(client, model_name, messages):
 # ---------------------------------------------------------------------------
 STYLE = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&display=swap');
 
 :root {
   --chalk: #F2F5F8;
@@ -365,8 +365,8 @@ STYLE = """
   --cobalt-soft: #E7ECFC;
   --amber: #F0A532;
   --amber-soft: #FFF6E6;
-  --display: 'Chakra Petch', 'IBM Plex Sans Thai', sans-serif;
-  --body: 'IBM Plex Sans Thai', sans-serif;
+  --display: 'Chakra Petch', 'IBM Plex Sans Thai Looped', sans-serif;
+  --body: 'IBM Plex Sans Thai Looped', 'Sarabun', sans-serif;
 }
 
 /* พื้นฐาน */
@@ -374,10 +374,13 @@ STYLE = """
 .stApp, .stMarkdown, .stMarkdown p, .stMarkdown li, label, input, textarea, button, select {
   font-family: var(--body);
 }
-.stMarkdown p, .stMarkdown li { line-height: 1.7; }
+/* ภาษาไทยมีสระบน-ล่าง จึงต้องการระยะบรรทัดมากกว่าภาษาอังกฤษ */
+.stMarkdown p, .stMarkdown li { font-size: 1.03rem; line-height: 1.85; letter-spacing: .003em; color: #1D2B3B; }
+.stMarkdown li { margin-bottom: .2rem; }
+.stMarkdown strong { font-weight: 600; color: var(--ink); }
 header[data-testid="stHeader"] { background: transparent; }
 .block-container { max-width: 780px; padding-top: 2.25rem; padding-bottom: 7rem; }
-:focus-visible { outline: 2px solid var(--cobalt) !important; outline-offset: 2px; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
 
 /* หัวแอป: เส้นคลื่นหัวใจ + แถบโซน 5 ระดับ */
 .fb-header { display: flex; align-items: center; gap: .9rem; }
@@ -393,7 +396,7 @@ header[data-testid="stHeader"] { background: transparent; }
 .zone-strip i:nth-child(5) { background: #E5484D; }
 
 /* หน้าต้อนรับ */
-.welcome h2 { font-family: var(--display); font-weight: 600; font-size: 1.35rem; color: var(--ink); margin: 0 0 .35rem; padding: 0; }
+.welcome h2 { font-family: var(--body); font-weight: 600; font-size: 1.3rem; color: var(--ink); margin: 0 0 .35rem; padding: 0; }
 .welcome p { color: var(--slate); margin: 0 0 1.1rem; max-width: 60ch; }
 
 /* ปุ่มทั่วไป (คำถามตัวอย่าง) */
@@ -410,11 +413,13 @@ header[data-testid="stHeader"] { background: transparent; }
 /* ข้อความแชต */
 [data-testid="stChatMessage"] { background: transparent; padding: .35rem 0; gap: .75rem; }
 [data-testid="stChatMessageContent"] { min-width: 0; }
-[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { flex-direction: row-reverse; }
-[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] {
-  flex: 0 1 auto; max-width: 82%; background: var(--cobalt); border-radius: 16px 16px 4px 16px; padding: .55rem 1rem;
+/* ข้อความผู้ใช้: ชิดขวาติดไอคอน กล่องกว้างเท่าข้อความ */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { flex-direction: row-reverse; align-items: flex-start; }
+.user-bubble {
+  width: fit-content; max-width: 82%; margin-left: auto;
+  background: var(--cobalt); color: #fff; border-radius: 16px 4px 16px 16px;
+  padding: .55rem 1rem; font-size: 1.03rem; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere;
 }
-[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] p { color: #fff; margin: 0; }
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] {
   background: var(--surface); border: 1px solid var(--line); border-radius: 4px 16px 16px 16px; padding: .9rem 1.15rem .75rem;
 }
@@ -465,12 +470,23 @@ header[data-testid="stHeader"] { background: transparent; }
 .hit-n { font: 600 .78rem var(--display); color: var(--slate); text-align: center; }
 .hit.used .hit-n { color: var(--cobalt); }
 .hit-title { font-size: .85rem; color: var(--ink); line-height: 1.4; }
-.hit-sec { font-size: .75rem; color: var(--slate); line-height: 1.4; }
+.hit-sec { font-size: .78rem; color: var(--slate); line-height: 1.4; }
 .hit:not(.used) .hit-title { color: var(--slate); }
 
 /* ช่องพิมพ์คำถาม */
-[data-testid="stChatInput"] { border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
-[data-testid="stChatInput"]:focus-within { border-color: var(--cobalt); }
+/* กรอบเดียวรอบทั้งช่อง: ตัดเส้นและพื้นเทาของ textarea ด้านใน แล้วใช้วงแสงอ่อนตอนพิมพ์ */
+[data-testid="stChatInput"] {
+  border-radius: 14px; border: 1px solid var(--line); background: var(--surface);
+  transition: border-color .15s, box-shadow .15s;
+}
+[data-testid="stChatInput"]:focus-within { border-color: var(--cobalt); box-shadow: 0 0 0 4px var(--cobalt-soft); }
+[data-testid="stChatInput"] > div,
+[data-testid="stChatInput"] textarea {
+  background: transparent !important; border: none !important; box-shadow: none !important;
+}
+[data-testid="stChatInput"] textarea { font-size: 1.02rem; outline: none !important; }
+[data-testid="stChatInput"] textarea::placeholder { color: #8796A5; }
+@media (prefers-reduced-motion: reduce) { [data-testid="stChatInput"] { transition: none; } }
 [data-testid="stBottom"] > div { background: var(--chalk); }
 
 /* แถบด้านข้าง */
@@ -479,15 +495,15 @@ header[data-testid="stHeader"] { background: transparent; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
 .stats div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .6rem; }
 .stats b { display: block; font: 600 1.15rem/1.2 var(--display); color: var(--ink); }
-.stats span { font-size: .72rem; color: var(--slate); }
-.doc-row { font-size: .8rem; line-height: 1.45; padding: .35rem 0; border-top: 1px solid var(--line); }
+.stats span { font-size: .78rem; color: var(--slate); }
+.doc-row { font-size: .84rem; line-height: 1.45; padding: .35rem 0; border-top: 1px solid var(--line); }
 .doc-row:first-child { border-top: none; }
 .doc-row b { color: var(--cobalt); font-weight: 600; }
-.disclaimer { font-size: .75rem; color: var(--slate); line-height: 1.55; margin-top: 1.6rem; padding-top: .9rem; border-top: 1px solid var(--line); }
+.disclaimer { font-size: .8rem; color: var(--slate); line-height: 1.55; margin-top: 1.6rem; padding-top: .9rem; border-top: 1px solid var(--line); }
 
 @media (max-width: 640px) {
   .fb-name { font-size: 1.35rem; }
-  [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] { max-width: 92%; }
+  .user-bubble { max-width: 92%; }
 }
 </style>
 """
@@ -582,6 +598,10 @@ def render_search_results(sources, answer, search_query):
         st.markdown("".join(rows), unsafe_allow_html=True)
 
 
+def render_user(question):
+    st.markdown(f'<div class="user-bubble">{html.escape(question)}</div>', unsafe_allow_html=True)
+
+
 def render_answer(answer, sources, search_query):
     if is_not_found(answer):
         render_not_found(answer)
@@ -634,7 +654,7 @@ def answer_question(question, client, model_name, top_k, threshold, kb):
     history = st.session_state.messages
 
     with st.chat_message("user"):
-        st.markdown(question)
+        render_user(question)
 
     with st.chat_message("assistant"):
         with st.spinner("กำลังค้นเอกสาร..."):
@@ -705,7 +725,7 @@ def main():
             if msg["role"] == "assistant":
                 render_answer(msg["content"], msg.get("sources", []), msg.get("search_query"))
             else:
-                st.markdown(msg["content"])
+                render_user(msg["content"])
 
     pending = render_welcome() if not st.session_state.messages else None
 
