@@ -32,6 +32,7 @@ CHUNK_SIZE = 700          # ความยาวสูงสุดของ chu
 OVERLAP_MAX_LEN = 250     # บรรทัดสุดท้ายที่สั้นกว่านี้จะถูกยกไปซ้อนใน chunk ถัดไป (overlap)
 HISTORY_TURNS = 6         # จำนวนข้อความย้อนหลังที่ส่งให้ LLM เพื่อคุยต่อเนื่อง
 RRF_K = 60                # ค่าคงที่ของ Reciprocal Rank Fusion สำหรับรวมผลค้นหาแบบเวกเตอร์กับแบบคีย์เวิร์ด
+DENSE_GUARANTEED = 3      # จำนวนผลอันดับต้นจากการค้นแบบเวกเตอร์ที่ได้เข้ารอบเสมอ
 NOT_FOUND = "ไม่พบข้อมูลในเอกสาร"
 LLM_MODELS = [            # เรียงตามลำดับที่อยากใช้ แอปจะแสดงเฉพาะตัวที่บัญชี Groq ใช้ได้จริง
     "openai/gpt-oss-120b",
@@ -220,13 +221,16 @@ def search(queries, kb, top_k):
     query_vecs = np.asarray(
         kb["model"].encode(queries, normalize_embeddings=True, show_progress_bar=False), dtype="float32"
     )
-    fused = {}
+    fused, best_dense = {}, {}
 
-    _, ids = index.search(query_vecs, pool)
-    for row_ids in ids:
-        for rank, idx in enumerate(row_ids):
-            if idx >= 0:
-                fused[int(idx)] = fused.get(int(idx), 0.0) + 1.0 / (RRF_K + rank + 1)
+    dense_scores, ids = index.search(query_vecs, pool)
+    for row_scores, row_ids in zip(dense_scores, ids):
+        for rank, (score, idx) in enumerate(zip(row_scores, row_ids)):
+            if idx < 0:
+                continue
+            idx = int(idx)
+            fused[idx] = fused.get(idx, 0.0) + 1.0 / (RRF_K + rank + 1)
+            best_dense[idx] = max(best_dense.get(idx, -1.0), float(score))
 
     for query in queries:
         bm_scores = kb["bm25"].get_scores(tokenize(query))
@@ -235,7 +239,11 @@ def search(queries, kb, top_k):
                 break
             fused[int(idx)] = fused.get(int(idx), 0.0) + 1.0 / (RRF_K + rank + 1)
 
-    ranked = sorted(fused, key=fused.get, reverse=True)[:top_k]
+    # ผลที่ความหมายใกล้ที่สุดจากเวกเตอร์ได้เข้ารอบเสมอ แล้วใช้ RRF (เวกเตอร์ + BM25) เติมที่เหลือ
+    # เพื่อไม่ให้คำทั่วไปอย่าง "adults" ใน BM25 เบียดเอกสารที่ตรงความหมายที่สุดออกไป
+    guaranteed = sorted(best_dense, key=best_dense.get, reverse=True)[:DENSE_GUARANTEED]
+    ranked = guaranteed + [i for i in sorted(fused, key=fused.get, reverse=True) if i not in guaranteed]
+    ranked = ranked[:top_k]
     # คะแนนความคล้าย (cosine) สูงสุดเทียบกับคำค้นทุกแบบ ใช้แสดงผลและเป็นเกณฑ์ตัดสินว่าเกี่ยวข้องหรือไม่
     chunk_vecs = np.vstack([index.reconstruct(i) for i in ranked])
     similarity = (chunk_vecs @ query_vecs.T).max(axis=1)
@@ -274,9 +282,11 @@ def build_messages(history, question, hits):
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     for msg in history[-HISTORY_TURNS:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
+    # ถ้าคำถามไม่มีอักษรไทยเลย ถือว่าเป็นภาษาอังกฤษ และสั่งให้ตอบเป็นภาษาอังกฤษอย่างชัดเจน
+    language = "ภาษาไทย" if THAI_CHARS.search(question) else "English (ตอบเป็นภาษาอังกฤษเท่านั้น)"
     messages.append({
         "role": "user",
-        "content": f"<context>\n{build_context(hits)}\n</context>\n\nคำถาม: {question}",
+        "content": f"<context>\n{build_context(hits)}\n</context>\n\nคำถาม: {question}\nภาษาที่ต้องตอบ: {language}",
     })
     return messages
 
@@ -293,7 +303,8 @@ def get_api_key():
 
 @st.cache_resource
 def get_client(api_key):
-    return Groq(api_key=api_key)
+    # Groq แบบฟรีจำกัด token ต่อนาที ถ้าโดนจำกัด (429) SDK จะรอตามที่เซิร์ฟเวอร์บอกแล้วลองใหม่
+    return Groq(api_key=api_key, max_retries=5)
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -552,7 +563,7 @@ def is_not_found(answer):
 
 def render_not_found(answer):
     detail = answer.strip()[len(NOT_FOUND):].strip(" .:-")
-    body = html.escape(detail.replace("**", ""))
+    body = format_answer(detail.replace("**", ""))
     st.markdown(f'<div class="nf"><b>{NOT_FOUND}</b>{body}</div>', unsafe_allow_html=True)
 
 
@@ -665,7 +676,7 @@ def render_sidebar(docs, chunks, models):
 
         with st.expander("ตั้งค่าการค้นหา", icon=":material/tune:"):
             model_name = st.selectbox("โมเดลภาษา (Groq)", models)
-            top_k = st.slider("จำนวนส่วนเอกสารที่ค้น", 2, 10, 6)
+            top_k = st.slider("จำนวนส่วนเอกสารที่ค้น", 3, 10, 7)
             threshold = st.slider(
                 "ความเกี่ยวข้องขั้นต่ำ", 0.0, 0.9, 0.30, 0.05,
                 help="ถ้าไม่มีส่วนเอกสารใดถึงเกณฑ์ ระบบจะตอบว่าไม่พบข้อมูลโดยไม่เรียกโมเดลภาษา",

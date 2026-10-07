@@ -62,7 +62,7 @@ flowchart LR
 | **Cleaning** | Unicode NFC, `pythainlp.util.normalize` (ลบ zero-width, สระและวรรณยุกต์ซ้ำ), ลบ markdown และช่องว่างซ้ำ |
 | **Chunking** | แบ่งตามหัวข้อ markdown ก่อน แล้วรวมบรรทัดเป็น chunk ไม่เกิน 700 ตัวอักษร โดยไม่ตัดกลางประโยค (ภาษาไทยตัดประโยคด้วย `pythainlp.tokenize.sent_tokenize`) และให้ chunk ติดกันซ้อนกัน 1 บรรทัด (overlap) ทุก chunk มีชื่อเอกสารและหัวข้อนำหน้าก่อนทำ embedding |
 | **Embedding** | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` เป็นโมเดลเล็กที่รองรับหลายภาษา ถามภาษาไทยแล้วค้นเจอเอกสารภาษาอังกฤษได้ |
-| **Hybrid Search** | ค้นแบบเวกเตอร์ด้วย FAISS `IndexFlatIP` (เวกเตอร์ normalize แล้ว = cosine similarity) ควบคู่กับค้นแบบคีย์เวิร์ดด้วย BM25 (ตัดคำด้วย PyThaiNLP) ทั้งด้วยคำถามเดิมและคำถามที่เขียนใหม่เป็นภาษาอังกฤษ แล้วรวมอันดับด้วย Reciprocal Rank Fusion (RRF) เลือก Top-K = 6 |
+| **Hybrid Search** | ค้นแบบเวกเตอร์ด้วย FAISS `IndexFlatIP` (เวกเตอร์ normalize แล้ว = cosine similarity) ควบคู่กับค้นแบบคีย์เวิร์ดด้วย BM25 (ตัดคำด้วย PyThaiNLP) ทั้งด้วยคำถามเดิมและคำถามที่เขียนใหม่เป็นภาษาอังกฤษ แล้วรวมอันดับด้วย Reciprocal Rank Fusion (RRF) โดย 3 อันดับแรกจากการค้นแบบเวกเตอร์ได้เข้ารอบเสมอ เลือก Top-K = 7 |
 | **Guardrail** | ถ้าไม่มี chunk ใดคะแนนถึงเกณฑ์ (ค่าเริ่มต้น 0.30) จะตอบ "ไม่พบข้อมูลในเอกสาร" ทันทีโดยไม่เรียก LLM |
 | **LLM** | Groq API (ค่าเริ่มต้น `openai/gpt-oss-120b`, reasoning effort ต่ำ) ตอบแบบ streaming, temperature 0.1 แอปถามรายชื่อโมเดลจาก Groq แล้วแสดงเฉพาะตัวที่บัญชีใช้ได้ |
 | **Memory** | ส่งประวัติแชต 6 ข้อความล่าสุดให้ LLM เพื่อคุยต่อเนื่อง |
