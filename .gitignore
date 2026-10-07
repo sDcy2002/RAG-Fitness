@@ -1,0 +1,9 @@
+# API Key / Secrets: ห้ามขึ้น GitHub
+.streamlit/secrets.toml
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
