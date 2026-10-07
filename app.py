@@ -420,8 +420,10 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px soli
   background: var(--cobalt); color: #fff; border-radius: 16px 4px 16px 16px;
   padding: .55rem 1rem; font-size: 1.03rem; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere;
 }
-[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 4px 16px 16px 16px; padding: .9rem 1.15rem .75rem;
+/* กล่องคำตอบ: มีแค่เนื้อหาคำตอบ */
+[class*="st-key-ans_"] {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 4px 16px 16px 16px;
+  padding: .85rem 1.15rem .3rem;
 }
 [data-testid="stChatMessageAvatarUser"] { background: var(--cobalt-soft); color: var(--cobalt); }
 [data-testid="stChatMessageAvatarAssistant"] { background: var(--ink); color: #fff; }
@@ -437,41 +439,43 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px soli
 .nf { border-left: 3px solid var(--amber); background: var(--amber-soft); border-radius: 8px; padding: .7rem .95rem; color: var(--ink); }
 .nf b { font-family: var(--display); font-weight: 600; display: block; margin-bottom: .2rem; }
 
-/* แถบแหล่งอ้างอิง */
-.src-label { font-size: .8rem; color: var(--slate); margin: .9rem 0 .35rem; padding-top: .7rem; border-top: 1px solid var(--line); }
-[data-testid="stPopover"] button {
-  background: var(--cobalt-soft); border: 1px solid transparent; border-radius: 999px;
-  padding: .2rem .75rem; min-height: 0; color: var(--ink);
+/* ลิงก์ข้อความเล็กใต้คำตอบ: กดแล้วจึงเปิดแหล่งอ้างอิง / ผลการค้น */
+[class*="st-key-refs_"] { gap: 1.1rem; padding: .3rem 0 0 .2rem; }
+[class*="st-key-refs_"] [data-testid="stPopover"] button {
+  background: none; border: none; box-shadow: none; padding: 0; min-height: 0; color: var(--cobalt);
 }
-[data-testid="stPopover"] button:hover { border-color: var(--cobalt); color: var(--cobalt); }
-[data-testid="stPopover"] button p { font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[class*="st-key-refs_"] [data-testid="stPopover"] button p { font-size: .85rem; font-weight: 500; }
+[class*="st-key-refs_"] [data-testid="stPopover"] button:hover p { text-decoration: underline; text-underline-offset: 3px; }
+[class*="st-key-refs_"] [data-testid="stPopover"] button span[data-testid="stIconMaterial"] { font-size: 1rem; }
+[data-testid="stPopoverBody"] { width: min(560px, 92vw); max-height: 70vh; overflow-y: auto; }
 
 /* มาตรวัดความเกี่ยวข้อง 5 ช่อง (โซน) */
 .meter { display: inline-flex; gap: 2px; vertical-align: middle; }
 .meter i { width: 9px; height: 7px; border-radius: 1.5px; background: var(--line); }
 .meter i.on { background: var(--cobalt); }
 
-/* รายละเอียดแหล่งอ้างอิง (ใน popover) */
-.src-org { font-family: var(--display); font-weight: 600; color: var(--cobalt); font-size: .85rem; }
-.src-title { font-weight: 600; color: var(--ink); line-height: 1.45; margin: .15rem 0 .3rem; }
-.src-meta { color: var(--slate); font-size: .8rem; display: flex; flex-wrap: wrap; gap: .35rem .9rem; align-items: center; }
-.src-quote {
-  margin: .7rem 0 .2rem; padding: .6rem .8rem; background: var(--chalk); border-radius: 8px;
-  font-size: .82rem; line-height: 1.6; color: var(--ink); max-height: 220px; overflow-y: auto;
+/* รายการใน popover: แถวละเอกสาร มีป้ายหน่วยงาน ชื่อ รายละเอียด และปุ่มเปิดต้นฉบับ */
+.pop-h { font-weight: 600; font-size: 1rem; color: var(--ink); }
+.pop-sub { font-size: .82rem; color: var(--slate); margin: .1rem 0 .75rem; }
+.pop-sub span { color: var(--ink); }
+.src-list { border: 1px solid var(--line); border-radius: 10px; }
+.src-item { display: grid; grid-template-columns: 2.6rem 1fr auto; gap: .75rem; padding: .8rem .85rem; border-top: 1px solid var(--line); }
+.src-item:first-child { border-top: none; }
+.src-badge {
+  width: 2.6rem; height: 2.6rem; border-radius: 10px; background: var(--ink); color: #fff;
+  display: grid; place-items: center; font: 600 .68rem/1.1 var(--display); text-align: center; overflow: hidden;
 }
-
-/* ผลการค้นทั้งหมด */
-[data-testid="stExpander"] details { border: 1px solid var(--line); border-radius: 10px; background: var(--chalk); }
-[data-testid="stExpander"] summary p { font-size: .82rem; color: var(--slate); }
-.query { font-size: .8rem; color: var(--slate); margin-bottom: .5rem; }
-.query span { color: var(--ink); }
-.hit { display: grid; grid-template-columns: 1.6rem 1fr auto; gap: .6rem; align-items: center; padding: .45rem 0; border-top: 1px solid var(--line); }
-.hit:first-of-type { border-top: none; }
-.hit-n { font: 600 .78rem var(--display); color: var(--slate); text-align: center; }
-.hit.used .hit-n { color: var(--cobalt); }
-.hit-title { font-size: .85rem; color: var(--ink); line-height: 1.4; }
-.hit-sec { font-size: .78rem; color: var(--slate); line-height: 1.4; }
-.hit:not(.used) .hit-title { color: var(--slate); }
+.src-item.dim .src-badge { background: #9AA8B6; }
+.src-title { font-weight: 600; font-size: .9rem; color: var(--ink); line-height: 1.45; }
+.src-desc { font-size: .82rem; color: #3A4A5C; line-height: 1.6; margin-top: .15rem;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.src-meta { font-size: .78rem; color: var(--slate); margin-top: .3rem; display: flex; flex-wrap: wrap; gap: .2rem .8rem; align-items: center; }
+.src-open {
+  align-self: start; font-size: .8rem; font-weight: 500; color: var(--ink) !important; text-decoration: none !important;
+  border: 1px solid var(--line); border-radius: 8px; padding: .3rem .65rem; background: var(--chalk); white-space: nowrap;
+}
+.src-open:hover { border-color: var(--cobalt); color: var(--cobalt) !important; }
+.used-tag { color: var(--cobalt); font-weight: 600; }
 
 /* ช่องพิมพ์คำถาม */
 /* กรอบเดียวรอบทั้งช่อง: ตัดเส้นและพื้นเทาของ textarea ด้านใน แล้วใช้วงแสงอ่อนตอนพิมพ์ */
@@ -553,62 +557,81 @@ def meter(score):
     return f'<span class="meter" title="ความเกี่ยวข้อง {score:.2f}" role="img" aria-label="ความเกี่ยวข้อง {filled} จาก 5">{cells}</span>'
 
 
-def render_citations(sources, answer):
-    """แสดงเฉพาะแหล่งที่ถูกอ้างในคำตอบ เป็นชิปเล็ก กดเพื่อดูรายละเอียด"""
-    cited = [n for n in cited_numbers(answer) if 1 <= n <= len(sources)]
-    if not cited:
-        return
-    st.markdown('<div class="src-label">แหล่งอ้างอิง</div>', unsafe_allow_html=True)
-    for start in range(0, len(cited), 3):
-        cols = st.columns(3)
-        for col, n in zip(cols, cited[start:start + 3]):
-            src = sources[n - 1]
-            with col.popover(f"[{n}] {src['org']}: {src['short']}", use_container_width=True):
-                excerpt = html.escape(src["text"]).replace("\n", "<br>")
-                st.markdown(
-                    f'<div class="src-org">{html.escape(src["source"])}</div>'
-                    f'<div class="src-title">{html.escape(src["title"])}</div>'
-                    f'<div class="src-meta"><span>หัวข้อ: {html.escape(src["heading"] or "-")}</span>'
-                    f'<span>ความเกี่ยวข้อง {meter(src["score"])}</span></div>'
-                    f'<div class="src-quote">{excerpt}</div>',
-                    unsafe_allow_html=True,
-                )
-                for url in src["urls"]:
-                    st.link_button("เปิดเอกสารต้นฉบับ", url, icon=":material/open_in_new:", use_container_width=True)
+def source_item(n, src, used):
+    """หนึ่งแถวในรายการเอกสาร: ป้ายหน่วยงาน, ชื่อ, ข้อความตัวอย่าง, ความเกี่ยวข้อง และปุ่มเปิดต้นฉบับ"""
+    excerpt = html.escape(" ".join(src["text"].split()))
+    url = src["urls"][0] if src["urls"] else ""
+    open_link = (
+        f'<a class="src-open" href="{html.escape(url)}" target="_blank" rel="noopener noreferrer">เปิดต้นฉบับ</a>'
+        if url else ""
+    )
+    used_tag = '<span class="used-tag">ใช้ตอบ</span>' if used else ""
+    return (
+        f'<div class="src-item{"" if used else " dim"}">'
+        f'<div class="src-badge">{html.escape(src["org"])}</div>'
+        f'<div><div class="src-title" title="{html.escape(src["title"])}">[{n}] {html.escape(src["short"])}</div>'
+        f'<div class="src-desc">{excerpt}</div>'
+        f'<div class="src-meta"><span>หัวข้อ {html.escape(src["heading"] or "-")}</span>'
+        f'<span>ความเกี่ยวข้อง {meter(src["score"])}</span>{used_tag}</div></div>'
+        f"{open_link}</div>"
+    )
 
 
-def render_search_results(sources, answer, search_query):
-    """ผลการค้นทั้งหมดและคำค้นที่ใช้ ซ่อนไว้ในแถบพับเพื่อไม่ให้รกตา"""
+def render_source_list(title, subtitle, items):
+    st.markdown(
+        f'<div class="pop-h">{title}</div><div class="pop-sub">{subtitle}</div>'
+        f'<div class="src-list">{"".join(items)}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_refs(answer, sources, search_query, key):
+    """ลิงก์ข้อความเล็กใต้คำตอบ กดแล้วจึงแสดงแหล่งอ้างอิงหรือผลการค้นทั้งหมด"""
     if not sources:
         return
-    cited = set(cited_numbers(answer))
-    label = f"ผลการค้นทั้งหมด {len(sources)} รายการ" if cited else f"ผลการค้นที่ใกล้เคียง {len(sources)} รายการ"
-    with st.expander(label, icon=":material/manage_search:"):
-        rows = []
-        if search_query:
-            rows.append(f'<div class="query">ค้นด้วยคำว่า <span>{html.escape(search_query)}</span></div>')
-        for n, src in enumerate(sources, 1):
-            used = " used" if n in cited else ""
-            rows.append(
-                f'<div class="hit{used}"><span class="hit-n">{n}</span>'
-                f'<div><div class="hit-title">{html.escape(src["org"])}: {html.escape(src["short"])}</div>'
-                f'<div class="hit-sec">{html.escape(src["file"])}, หัวข้อ {html.escape(src["heading"] or "-")}</div></div>'
-                f'{meter(src["score"])}</div>'
+    cited = [n for n in cited_numbers(answer) if 1 <= n <= len(sources)]
+    try:
+        row = st.container(horizontal=True, key=key)
+    except TypeError:  # Streamlit รุ่นเก่าที่ยังไม่มี horizontal container
+        row = st.container(key=key)
+
+    with row:
+        if cited:
+            with st.popover(f"แหล่งอ้างอิง {len(cited)}", icon=":material/menu_book:"):
+                render_source_list(
+                    "เอกสารที่ใช้ตอบคำถามนี้",
+                    "เลขในวงเล็บตรงกับเลขในคำตอบ กดเปิดต้นฉบับเพื่ออ่านฉบับเต็ม",
+                    [source_item(n, sources[n - 1], True) for n in cited],
+                )
+        label = f"ผลการค้นทั้งหมด {len(sources)}" if cited else f"ผลการค้นที่ใกล้เคียง {len(sources)}"
+        with st.popover(label, icon=":material/manage_search:"):
+            query = f'ค้นด้วยคำว่า <span>{html.escape(search_query)}</span>' if search_query else ""
+            render_source_list(
+                "ส่วนเอกสารที่ระบบค้นเจอ",
+                query,
+                [source_item(n, src, n in cited) for n, src in enumerate(sources, 1)],
             )
-        st.markdown("".join(rows), unsafe_allow_html=True)
 
 
 def render_user(question):
     st.markdown(f'<div class="user-bubble">{html.escape(question)}</div>', unsafe_allow_html=True)
 
 
-def render_answer(answer, sources, search_query):
+def render_answer_body(answer):
     if is_not_found(answer):
         render_not_found(answer)
     else:
         st.markdown(format_answer(answer), unsafe_allow_html=True)
-    render_citations(sources, answer)
-    render_search_results(sources, answer, search_query)
+
+
+def render_answer(answer, sources, search_query, idx):
+    """คำตอบในกล่อง (มีแค่เนื้อหา) แล้วตามด้วยลิงก์แหล่งอ้างอิงใต้กล่อง"""
+    if is_not_found(answer):
+        render_answer_body(answer)
+    else:
+        with st.container(key=f"ans_{idx}"):
+            render_answer_body(answer)
+    render_refs(answer, sources, search_query, key=f"refs_{idx}")
 
 
 def render_sidebar(docs, chunks, models):
@@ -652,6 +675,7 @@ def render_sidebar(docs, chunks, models):
 
 def answer_question(question, client, model_name, top_k, threshold, kb):
     history = st.session_state.messages
+    idx = len(history) + 1  # ตำแหน่งของคำตอบนี้ในประวัติแชต ใช้ตั้งชื่อ key ให้ไม่ซ้ำ
 
     with st.chat_message("user"):
         render_user(question)
@@ -665,8 +689,10 @@ def answer_question(question, client, model_name, top_k, threshold, kb):
         if not relevant:
             answer = f"{NOT_FOUND} ลองถามเรื่องปริมาณการออกกำลังกาย การฝึกกล้ามเนื้อ การลดน้ำหนัก หรือการป้องกันการบาดเจ็บ"
             sources = hits
+            render_answer_body(answer)
         else:
-            placeholder, answer = st.empty(), ""
+            # พิมพ์คำตอบทีละส่วนลงในกล่องคำตอบ แล้วใช้กล่องเดิมเป็นผลลัพธ์สุดท้าย
+            placeholder, answer = st.container(key=f"ans_{idx}").empty(), ""
             try:
                 for piece in stream_answer(client, model_name, build_messages(history, question, relevant)):
                     answer += piece
@@ -675,12 +701,14 @@ def answer_question(question, client, model_name, top_k, threshold, kb):
                 placeholder.empty()
                 st.error(f"เรียกใช้โมเดลภาษาไม่สำเร็จ: {err}")
                 return
-            placeholder.empty()
             if not answer.strip():
+                placeholder.empty()
                 st.warning("โมเดลภาษาไม่ได้ส่งคำตอบกลับมา ลองถามอีกครั้ง หรือเปลี่ยนโมเดลในตั้งค่าการค้นหา")
                 return
+            with placeholder.container():
+                render_answer_body(answer)
             sources = relevant
-        render_answer(answer, sources, search_query)
+        render_refs(answer, sources, search_query, key=f"refs_{idx}")
 
     st.session_state.messages.append({"role": "user", "content": question})
     st.session_state.messages.append(
@@ -720,10 +748,10 @@ def main():
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    for msg in st.session_state.messages:
+    for idx, msg in enumerate(st.session_state.messages):
         with st.chat_message(msg["role"]):
             if msg["role"] == "assistant":
-                render_answer(msg["content"], msg.get("sources", []), msg.get("search_query"))
+                render_answer(msg["content"], msg.get("sources", []), msg.get("search_query"), idx)
             else:
                 render_user(msg["content"])
 
