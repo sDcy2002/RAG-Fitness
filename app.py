@@ -30,9 +30,10 @@ CHUNK_SIZE = 700          # ความยาวสูงสุดของ chu
 OVERLAP_MAX_LEN = 250     # บรรทัดสุดท้ายที่สั้นกว่านี้จะถูกยกไปซ้อนใน chunk ถัดไป (overlap)
 HISTORY_TURNS = 6         # จำนวนข้อความย้อนหลังที่ส่งให้ LLM เพื่อคุยต่อเนื่อง
 NOT_FOUND = "ไม่พบข้อมูลในเอกสาร"
-LLM_MODELS = [
-    "llama-3.3-70b-versatile",
+LLM_MODELS = [            # เรียงตามลำดับที่อยากใช้ แอปจะแสดงเฉพาะตัวที่บัญชี Groq ใช้ได้จริง
     "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
 ]
 EXAMPLE_QUESTIONS = [
@@ -247,6 +248,23 @@ def get_client(api_key):
     return Groq(api_key=api_key)
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def list_available_models(api_key):
+    """ถามรายชื่อโมเดลจาก Groq แล้วเก็บเฉพาะตัวที่อยู่ใน LLM_MODELS (กันปัญหาโมเดลถูกยกเลิก)"""
+    try:
+        ids = {m.id for m in Groq(api_key=api_key).models.list().data}
+    except Exception:
+        return LLM_MODELS
+    return [m for m in LLM_MODELS if m in ids] or LLM_MODELS
+
+
+def model_options(model_name):
+    """โมเดล gpt-oss คิดก่อนตอบ (reasoning) ตั้งระดับต่ำเพื่อให้ตอบเร็วและไม่เปลือง token"""
+    if model_name.startswith("openai/gpt-oss"):
+        return {"reasoning_effort": "low"}
+    return {}
+
+
 def rewrite_query(client, model_name, history, question):
     """เขียนคำถามใหม่ให้สมบูรณ์ในตัว (รองรับคำถามต่อเนื่อง) และแปลเป็นอังกฤษเพื่อค้นเอกสารภาษาอังกฤษ"""
     convo = "\n".join(f"{m['role']}: {m['content'][:500]}" for m in history[-4:])
@@ -258,7 +276,8 @@ def rewrite_query(client, model_name, history, question):
                 {"role": "user", "content": f"Chat history:\n{convo or '(none)'}\n\nLatest message: {question}"},
             ],
             temperature=0,
-            max_tokens=100,
+            max_tokens=400,
+            **model_options(model_name),
         )
         rewritten = (response.choices[0].message.content or "").strip().strip('"')
         return rewritten or question
@@ -271,8 +290,9 @@ def stream_answer(client, model_name, messages):
         model=model_name,
         messages=messages,
         temperature=0.1,
-        max_tokens=1024,
+        max_tokens=2048,
         stream=True,
+        **model_options(model_name),
     )
     for chunk in stream:
         delta = chunk.choices[0].delta.content
@@ -312,14 +332,14 @@ def render_sources(sources, answer, search_query=None):
                 st.divider()
 
 
-def render_sidebar(docs, chunks):
+def render_sidebar(docs, chunks, models):
     with st.sidebar:
         st.header("💪 FitBot")
         st.write("ผู้ช่วยตอบคำถามเรื่องการออกกำลังกาย อ้างอิงจากเอกสารของ CDC, NIH, WHO และ สสส.")
         st.warning("ข้อมูลนี้ใช้เพื่อการศึกษา ไม่ใช่คำแนะนำทางการแพทย์ หากมีโรคประจำตัวควรปรึกษาแพทย์ก่อนออกกำลังกาย")
 
         st.subheader("⚙️ ตั้งค่า")
-        model_name = st.selectbox("โมเดล LLM (Groq)", LLM_MODELS)
+        model_name = st.selectbox("โมเดล LLM (Groq)", models)
         top_k = st.slider("จำนวน chunk ที่ค้นหา (Top-K)", 2, 10, 5)
         threshold = st.slider(
             "คะแนนความคล้ายขั้นต่ำ", 0.0, 0.9, 0.30, 0.05,
@@ -361,6 +381,9 @@ def answer_question(question, client, model_name, top_k, threshold, kb):
             except Exception as err:
                 st.error(f"เรียกใช้ LLM ไม่สำเร็จ: {err}")
                 return
+            if not answer or not answer.strip():
+                st.warning("โมเดลไม่ได้ส่งคำตอบกลับมา ลองถามใหม่ หรือเปลี่ยนโมเดลในแถบด้านข้าง")
+                return
             sources = relevant
         render_sources(sources, answer, search_query)
 
@@ -381,7 +404,7 @@ def main():
     client = get_client(api_key)
 
     kb = load_knowledge_base()
-    model_name, top_k, threshold = render_sidebar(kb[3], kb[2])
+    model_name, top_k, threshold = render_sidebar(kb[3], kb[2], list_available_models(api_key))
 
     if "messages" not in st.session_state:
         st.session_state.messages = []

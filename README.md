@@ -61,7 +61,7 @@ flowchart LR
 | **Embedding** | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` เป็นโมเดลเล็กที่รองรับหลายภาษา ถามภาษาไทยแล้วค้นเจอเอกสารภาษาอังกฤษได้ |
 | **Vector Search** | FAISS `IndexFlatIP` บนเวกเตอร์ที่ normalize แล้ว (= cosine similarity) ค้นด้วยทั้งคำถามเดิมและคำถามที่เขียนใหม่เป็นภาษาอังกฤษ แล้วรวมผล |
 | **Guardrail** | ถ้าไม่มี chunk ใดคะแนนถึงเกณฑ์ (ค่าเริ่มต้น 0.30) จะตอบ "ไม่พบข้อมูลในเอกสาร" ทันทีโดยไม่เรียก LLM |
-| **LLM** | Groq API (ค่าเริ่มต้น `llama-3.3-70b-versatile`) ตอบแบบ streaming, temperature 0.1 |
+| **LLM** | Groq API (ค่าเริ่มต้น `openai/gpt-oss-120b`, reasoning effort ต่ำ) ตอบแบบ streaming, temperature 0.1 แอปถามรายชื่อโมเดลจาก Groq แล้วแสดงเฉพาะตัวที่บัญชีใช้ได้ |
 | **Memory** | ส่งประวัติแชต 6 ข้อความล่าสุดให้ LLM เพื่อคุยต่อเนื่อง |
 | **Performance** | โหลดโมเดลและสร้าง index ครั้งเดียวด้วย `@st.cache_resource` |
 
