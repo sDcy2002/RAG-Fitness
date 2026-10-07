@@ -256,7 +256,7 @@ SYSTEM_PROMPT = f"""คุณคือ "FitBot" ผู้ช่วยตอบ�
 1. ตอบโดยใช้ข้อมูลที่อยู่ใน <context> เท่านั้น ห้ามใช้ความรู้ภายนอก ห้ามเดา และห้ามแต่งตัวเลขเพิ่ม
 2. ถ้า <context> ไม่มีข้อมูลที่ตอบคำถามได้ หรือคำถามไม่เกี่ยวกับการออกกำลังกาย/สุขภาพ ให้ขึ้นต้นคำตอบด้วยข้อความ "{NOT_FOUND}" แล้วบอกสั้นๆ ว่าในเอกสารมีข้อมูลเรื่องใดที่ใกล้เคียง (ถ้ามี) ห้ามตอบจากความรู้ของตัวเอง
 3. ถ้าตอบได้เพียงบางส่วน ให้ตอบเฉพาะส่วนที่มีในเอกสาร และบอกว่าส่วนใดไม่พบข้อมูล
-4. ใส่เลขอ้างอิงแหล่งที่มาในรูปแบบ [1], [2] ท้ายประโยคหรือ bullet ที่ใช้ข้อมูลนั้น โดยใช้เลขตรงกับใน <context>
+4. ใส่เลขอ้างอิงแหล่งที่มาในรูปแบบ [1], [2] ท้ายประโยคหรือ bullet ที่ใช้ข้อมูลนั้น โดยใช้เลขตรงกับใน <context> ห้ามใช้รูปแบบอื่น เช่น 【1†L1】
 5. ตอบเป็นภาษาเดียวกับคำถาม: ถามภาษาไทยตอบภาษาไทย ถามภาษาอังกฤษตอบภาษาอังกฤษ ถ้าเอกสารเป็นภาษาอังกฤษแต่ถามเป็นไทย ให้แปลเป็นไทยอย่างถูกต้อง และแปลงหน่วยให้เข้าใจง่ายเมื่อเอกสารมีให้ (เช่น 154 lb = 70 kg)
 6. ตอบกระชับ ชัดเจน ใช้ bullet เมื่อมีหลายข้อ
 7. ถ้าคำถามเกี่ยวกับโรค อาการบาดเจ็บ หรือการตั้งครรภ์ ให้ปิดท้ายด้วยคำแนะนำให้ปรึกษาแพทย์หรือผู้เชี่ยวชาญ
@@ -526,6 +526,12 @@ HEADER = """
 """
 
 CITE_PATTERN = re.compile(r"\[(\d+(?:\s*[,，]\s*\d+)*)\]")
+# โมเดล gpt-oss บางครั้งอ้างอิงในรูปแบบของตัวเอง เช่น 【3†L-3-L-5】 หรือ [3†L1] จึงแปลงให้เป็น [3]
+NATIVE_CITE = re.compile(r"【(\d+)(?:†[^】]*)?】|\[(\d+)†[^\]]*\]")
+
+
+def normalize_citations(answer):
+    return NATIVE_CITE.sub(lambda m: f"[{m.group(1) or m.group(2)}]", answer)
 
 
 def cited_numbers(answer):
@@ -696,7 +702,8 @@ def answer_question(question, client, model_name, top_k, threshold, kb):
             try:
                 for piece in stream_answer(client, model_name, build_messages(history, question, relevant)):
                     answer += piece
-                    placeholder.markdown(format_answer(answer) + " ▍", unsafe_allow_html=True)
+                    placeholder.markdown(format_answer(normalize_citations(answer)) + " ▍", unsafe_allow_html=True)
+                answer = normalize_citations(answer)
             except Exception as err:
                 placeholder.empty()
                 st.error(f"เรียกใช้โมเดลภาษาไม่สำเร็จ: {err}")
